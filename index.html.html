@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>TransitMate v14</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* --- CSS VARIABLES --- */
+    :root {
+      --bg-body: #000000;
+      --bg-app: #0f1115;
+      --bg-card: #181a20;
+      --bg-input: #23262f;
+      --bg-nav: rgba(24, 26, 32, 0.95);
+      
+      --text-main: #FFFFFF;
+      --text-muted: #808191;
+      --border-color: rgba(255,255,255,0.05);
+      
+      --primary: #6C5DD3; 
+      --primary-glow: rgba(108, 93, 211, 0.4);
+      --accent: #3F8CFF;
+      --success: #45B26B;
+      --warning: #FFD166;
+      --danger: #FF4D4D;
+      
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --nav-height: 70px;
+    }
+
+    [data-theme="light"] {
+      --bg-body: #e4e5f1;
+      --bg-app: #ffffff;
+      --bg-card: #f7f7f7;
+      --bg-input: #eef0f6;
+      --bg-nav: rgba(255, 255, 255, 0.95);
+      --text-main: #11142d;
+      --text-muted: #808191;
+      --border-color: rgba(0,0,0,0.05);
+      --primary-glow: rgba(108, 93, 211, 0.15);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      margin: 0; font-family: 'Inter', sans-serif;
+      background: var(--bg-body); color: var(--text-main);
+      display: flex; justify-content: center; min-height: 100vh;
+      transition: background 0.3s ease;
+    }
+
+    #app {
+      width: 100%; max-width: 420px;
+      background: var(--bg-app); position: relative;
+      display: flex; flex-direction: column;
+      box-shadow: 0 0 50px rgba(0,0,0,0.1);
+      height: 100vh; overflow: hidden;
+      transition: background 0.3s ease;
+    }
+    
+    .scroll-area {
+      flex: 1; overflow-y: auto;
+      /* FIXED: Increased padding to 140px so content isn't hidden behind the raised nav */
+      padding: 0 20px 140px; 
+      scroll-behavior: smooth;
+    }
+
+    /* Universal Header */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; background: var(--bg-app);
+      position: sticky; top: 0; z-index: 10;
+      border-bottom: 1px solid var(--border-color);
+      transition: background 0.3s ease;
+    }
+    .header-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
+    .back-btn { 
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; background: var(--bg-input); cursor: pointer; margin-right: 10px;
+      color: var(--text-main); transition: 0.2s;
+    }
+
+    /* CLEAN SOS BUTTON (Header Integrated) */
+    .sos-icon {
+        width: 36px; height: 36px; 
+        background: rgba(255, 77, 77, 0.15); 
+        border: 1px solid var(--danger);
+        color: var(--danger);
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 18px;
+    }
+    .sos-icon:active { background: var(--danger); color: white; }
+
+    /* Components */
+    h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; color: var(--text-main); }
+    h2 { font-size: 17px; font-weight: 600; margin: 0 0 12px; color: var(--text-main); }
+    p { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.4; }
+    
+    .btn {
+      width: 100%; padding: 14px; border: none; border-radius: var(--radius-md);
+      background: var(--primary); color: white; font-weight: 600; font-size: 15px;
+      cursor: pointer; box-shadow: 0 8px 20px -6px var(--primary-glow);
+      display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; background: var(--bg-input); color: var(--text-muted); }
+    .btn.secondary { background: var(--bg-input); color: var(--text-main); box-shadow: none; }
+    .btn.danger { background: var(--danger); box-shadow: 0 8px 20px -6px rgba(255, 77, 77, 0.4); }
+    .btn.sm { padding: 8px 16px; font-size: 12px; width: auto; height: 36px; }
+    
+    .input-group { margin-bottom: 16px; }
+    label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+    input, select {
+      width: 100%; background: var(--bg-input); border: 1px solid var(--border-color);
+      padding: 14px; border-radius: 12px; color: var(--text-main); font-size: 14px; outline: none; transition: 0.2s;
+    }
+    input:focus { border-color: var(--primary); }
+
+    .card {
+      background: var(--bg-card); border-radius: var(--radius-lg);
+      padding: 20px; margin-bottom: 16px; border: 1px solid var(--border-color);
+      transition: background 0.3s ease;
+    }
+
+    /* Rating System */
+    .rating-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed var(--border-color);
+    }
+    .rating-label { font-size: 14px; font-weight: 600; }
+    .star-input { display: flex; gap: 4px; }
+    .star-btn { font-size: 20px; cursor: pointer; color: var(--bg-input); transition: 0.2s; }
+    .star-btn.active { color: var(--warning); }
+
+    /* Timeline */
+    .timeline { position: relative; padding-left: 24px; margin: 20px 0; }
+    .timeline::before {
+      content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px;
+      width: 2px; background: var(--border-color);
+    }
+    .tl-item { position: relative; margin-bottom: 24px; }
+    .tl-item:last-child { margin-bottom: 0; }
+    .tl-dot {
+      position: absolute; left: -21px; top: 4px; width: 10px; height: 10px;
+      border-radius: 50%; background: var(--bg-app); border: 2px solid var(--text-muted); z-index: 2;
+    }
+    .tl-dot.active { border-color: var(--primary); }
+    .tl-dot.ok { border-color: var(--success); background: var(--success); }
+    .tl-connector { position: absolute; left: 14px; top: 20px; bottom: -24px; width: 2px; }
+    
+    /* Navigation - FIXED FOR TIINY HOST */
+    .nav-bar {
+      position: absolute; 
+      bottom: 60px !important; /* MOVED UP ABOVE THE BANNER */
+      left: 0; 
+      width: 100%; 
+      height: var(--nav-height);
+      background: var(--bg-nav); backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border-color);
+      display: flex; justify-content: space-around; align-items: center; 
+      z-index: 9999; /* ENSURES IT IS ON TOP OF BANNER */
+      transition: background 0.3s ease;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative;
+      color: var(--text-muted); font-size: 10px; font-weight: 600; cursor: pointer; padding: 8px;
+    }
+    .nav-item svg { width: 24px; height: 24px; fill: currentColor; }
+    .nav-item.active { color: var(--primary); }
+    
+    .nav-dot {
+      position: absolute; top: 6px; right: 18px; width: 8px; height: 8px;
+      background: var(--danger); border-radius: 50%; border: 2px solid var(--bg-nav);
+      display: none;
+    }
+    .nav-dot.show { display: block; }
+
+    /* Toast */
+    .toast {
+        position: absolute; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+        background: var(--bg-card); border: 1px solid var(--primary); color: var(--text-main);
+        padding: 12px 20px; border-radius: 30px; font-size: 13px; font-weight: 600;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 200; opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex; align-items: center; gap: 10px; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast-icon { width: 20px; height: 20px; border-radius: 50%; background: var(--success); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; }
+
+    /* Chat UI */
+    .chat-container { display: flex; flex-direction: column; height: 100%; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; }
+    .msg { max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; }
+    .msg.them { background: var(--bg-input); color: var(--text-main); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .msg.me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg.typing { opacity: 0.7; font-size: 12px; font-style: italic; }
+    
+    /* SMART CHIPS (RESTORED) */
+    .chat-suggestions {
+      display: flex; gap: 8px; overflow-x: auto; padding: 12px 16px;
+      background: var(--bg-app); border-top: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+    .chip {
+      background: rgba(108, 93, 211, 0.1); color: var(--primary); padding: 8px 14px; 
+      border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid rgba(108, 93, 211, 0.2);
+      transition: 0.2s;
+    }
+    .chip:active { background: rgba(108, 93, 211, 0.3); }
+
+    .chat-input-area { padding: 12px; background: var(--bg-card); display: flex; gap: 10px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+
+    /* Settings UI */
+    .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
+    .toggle { width: 44px; height: 24px; background: var(--bg-input); border-radius: 20px; position: relative; transition: 0.3s; cursor: pointer; }
+    .toggle.on { background: var(--success); }
+    .toggle::after { content: ''; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .toggle.on::after { transform: translateX(20px); }
+
+    /* Utilities */
+    .flex-between { display: flex; align-items: center; justify-content: space-between; }
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .badge.ok { background: rgba(69, 178, 107, 0.15); color: var(--success); }
+    .badge.warn { background: rgba(255, 209, 102, 0.15); color: var(--warning); }
+    .badge.err { background: rgba(255, 77, 77, 0.15); color: var(--danger); }
+    .avatar { width: 44px; height: 44px; border-radius: 50%; background: #333; object-fit: cover; }
+    .tap-action { font-size: 11px; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+    .fade-in { animation: fadeIn 0.3s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div id="toast" class="toast">
+      <div class="toast-icon">✓</div>
+      <div id="toastMsg">Notification</div>
+  </div>
+
+  <div id="globalHeader" class="header" style="display:none;">
+     <div class="header-title">TransitMate</div>
+     <div class="sos-icon" onclick="triggerSOS()">🚨</div>
+  </div>
+
+  <div id="main-content" class="scroll-area"></div>
+  
+  <div class="nav-bar" id="navBar">
+    <div class="nav-item active" onclick="routeTo('home')">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home
+    </div>
+    <div class="nav-item" onclick="routeTo('inbox')">
+      <div class="nav-dot" id="notifDot"></div>
+      <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>Inbox
+    </div>
+    <div class="nav-item" onclick="routeTo('profile')">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Settings
+    </div>
+  </div>
+</div>
+
+<script>
+const DB_KEY = "tm_v14_db";
+let activeScreen = 'home';
+let ratingScores = { q1: 0, q2: 0, q3: 0, q4: 0 };
+
+/* --- 1. Data & Logic --- */
+function loadDB(){ const s=localStorage.getItem(DB_KEY); return s?JSON.parse(s):seedData(); }
+function saveDB(d){ localStorage.setItem(DB_KEY, JSON.stringify(d)); }
+
+function seedData(){
+  return {
+    settings: { theme: 'dark' },
+    hasNotification: false,
+    currentUserId: "u1", // Default placeholder
+    users: {
+      "u1": { id: "u1", name: "Guest", age: 20, gender: "Male", is_verified: false, rating: 0 },
+      "u_kunal": { id: "u_kunal", name: "Kunal.R", age: 22, gender: "Male", is_verified: true, rating: 4.3, interests: ["🏏 Cricket", "Beawar"] },
+      "u_nehal": { id: "u_nehal", name: "Nehal", age: 21, gender: "Female", is_verified: true, rating: 4.9, interests: ["🎨 Art", "Mahesana"] },
+      "u_vanisha": { id: "u_vanisha", name: "Vanisha", age: 23, gender: "Female", is_verified: true, rating: 5.0, interests: ["📚 Books", "Ahmedabad"] },
+      "u_lakshya": { id: "u_lakshya", name: "Lakshya", age: 24, gender: "Male", is_verified: true, rating: 4.1, interests: ["🏋️ Gym", "Baroda"] },
+      "u_daksh": { id: "u_daksh", name: "Daksh", age: 25, gender: "Male", is_verified: true, rating: 4.7, interests: ["🍜 Foodie", "Surat"] },
+    },
+    trips: {
+      "t_kunal": { id: "t_kunal", userId: "u_kunal", train: "12990", start: "BER", end: "ABR", route: ["AJM","BER","ABR","MSH","ADI","BRC","ST","BSR","SBC"] },
+      "t_nehal": { id: "t_nehal", userId: "u_nehal", train: "12990", start: "ABR", end: "MSH", route: ["AJM","BER","ABR","MSH","ADI","BRC","ST","BSR","SBC"] },
+      "t_vanisha": { id: "t_vanisha", userId: "u_vanisha", train: "12990", start: "ADI", end: "SBC", route: ["AJM","BER","ABR","MSH","ADI","BRC","ST","BSR","SBC"] },
+      "t_lakshya": { id: "t_lakshya", userId: "u_lakshya", train: "12990", start: "BRC", end: "BSR", route: ["AJM","BER","ABR","MSH","ADI","BRC","ST","BSR","SBC"] },
+      "t_daksh": { id: "t_daksh", userId: "u_daksh", train: "12990", start: "ST", end: "SBC", route: ["AJM","BER","ABR","MSH","ADI","BRC","ST","BSR","SBC"] },
+    },
+    requests: {},
+    chats: {}
+  };
+}
+
+function findRelayMatches(myTrip, db){
+  const route = myTrip.route;
+  const myStartIdx = route.indexOf(myTrip.start);
+  const candidates = Object.values(db.trips).filter(t => t.train === myTrip.train && t.userId !== db.currentUserId);
+  let relays = candidates.filter(t => {
+    const tStartIdx = route.indexOf(t.start);
+    return tStartIdx > myStartIdx;
+  }).map(t => {
+    return { ...t, soloStops: route.indexOf(t.start) - myStartIdx };
+  }).sort((a,b) => a.soloStops - b.soloStops);
+  return { relays };
+}
+
+/* --- 2. Heal Logic --- */
+function healDatabase(){
+  const db = loadDB();
+  let changed = false;
+  Object.values(db.requests).forEach(r => {
+    if(r.status === 'pending' && (Date.now() - r.timestamp > 3000)){
+        const isAccepted = Math.random() > 0.3; 
+        r.status = isAccepted ? "accepted" : "rejected";
+        changed = true;
+    }
+    if(r.status === 'accepted'){
+      if(!r.chatId) { r.chatId = "chat_" + r.id; changed = true; }
+      if(!db.chats[r.chatId]){
+          db.chats[r.chatId] = { id: r.chatId, members: [db.currentUserId, r.to], messages: [] };
+          changed = true;
+      }
+    }
+  });
+  if(changed) saveDB(db);
+}
+
+/* --- 3. UI --- */
+function init(){
+  const db = loadDB();
+  applyTheme(db.settings.theme);
+  healDatabase();
+  updateNotifDot();
+  const me = db.users[db.currentUserId];
+  if(!me.is_verified) renderLogin(); 
+  else routeTo('home');
+}
+
+function applyTheme(theme){
+  document.body.setAttribute('data-theme', theme);
+  const db = loadDB();
+  db.settings.theme = theme;
+  saveDB(db);
+}
+
+function triggerSOS(){
+    alert("🚨 EMERGENCY ALERT TRIGGERED! \n\nLive Location sent to:\n- Railway Police\n- Emergency Contacts\n- TransitMate Support");
+}
+
+function updateNotifDot(){
+  const dot = document.getElementById('notifDot');
+  const d = loadDB();
+  if(d.hasNotification) dot.classList.add('show');
+  else dot.classList.remove('show');
+}
+
+function showToast(msg, isErr=false){
+    const t = document.getElementById('toast');
+    const txt = document.getElementById('toastMsg');
+    const icon = t.querySelector('.toast-icon');
+    txt.innerText = msg;
+    icon.innerHTML = isErr ? '✕' : '✓';
+    icon.style.background = isErr ? 'var(--danger)' : 'var(--success)';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function routeTo(screen, data={}){
+  activeScreen = screen;
+  const db = loadDB(); 
+  
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navMap = { 'home':0, 'inbox':1, 'profile':2 };
+  if(navMap[screen] !== undefined) document.querySelectorAll('.nav-item')[navMap[screen]].classList.add('active');
+
+  const navBar = document.getElementById('navBar');
+  const globalHead = document.getElementById('globalHeader');
+  
+  // Default Visibility
+  navBar.style.display = 'flex';
+  globalHead.style.display = 'none';
+
+  if(screen === 'home') {
+      globalHead.style.display = 'flex'; // Show Global Header on Home
+      renderHome();
+  }
+  
+  if(screen === 'feed') renderFeed(data.tripId);
+  
+  if(screen === 'inbox') {
+      healDatabase(); 
+      db.hasNotification = false; saveDB(db); updateNotifDot();
+      globalHead.style.display = 'flex'; // Show Global Header on Inbox
+      renderInbox();
+  }
+  
+  if(screen === 'chat') { 
+      if(!db.chats[data.chatId]){
+          const req = Object.values(db.requests).find(r => r.chatId === data.chatId);
+          if(req){
+              db.chats[data.chatId] = { id: data.chatId, members: [db.currentUserId, req.to], messages: [] };
+              saveDB(db);
+          }
+      }
+      navBar.style.display='none'; 
+      renderChat(data.chatId); 
+  }
+  
+  if(screen === 'rating') {
+      navBar.style.display='none';
+      renderRating(data.userId);
+  }
+  
+  if(screen === 'profile') renderProfile();
+}
+
+/* --- Screen: LOGIN --- */
+function renderLogin(){
+  document.getElementById('navBar').style.display = 'none';
+  document.getElementById('globalHeader').style.display = 'none';
+  
+  document.getElementById('main-content').innerHTML = `
+    <div class="fade-in" style="padding:40px 20px; text-align:center; display:flex; flex-direction:column; justify-content:center; height:90vh;">
+      <div style="width:80px; height:80px; background:linear-gradient(135deg, var(--primary), var(--accent)); border-radius:50%; margin:0 auto 24px; box-shadow:0 0 30px var(--primary-glow);"></div>
+      <h1 style="font-size:28px;">TransitMate</h1>
+      <p style="margin-bottom:40px;">Find safe companions for your journey.</p>
+      
+      <div class="card" style="text-align:left;">
+        <label>Enter Your Name</label>
+        <input id="loginName" placeholder="e.g. Rahul, Priya" style="margin-bottom:16px;">
+        <button class="btn" onclick="doLogin()">Start Journey ➜</button>
+      </div>
+    </div>
+  `;
+}
+
+function doLogin(){
+  const name = document.getElementById('loginName').value.trim();
+  if(!name) return alert("Please enter a name.");
+  const db = loadDB();
+  db.users[db.currentUserId].name = name;
+  db.users[db.currentUserId].is_verified = true;
+  saveDB(db);
+  routeTo('home');
+}
+
+/* --- Screen: Home --- */
+function renderHome(){
+  const db = loadDB();
+  const me = db.users[db.currentUserId];
+  document.getElementById('main-content').innerHTML = `
+    <div class="fade-in" style="padding-top:20px;">
+      <div class="flex-between" style="margin-bottom:24px;">
+        <div>
+          <h1>Hi, ${me.name} 👋</h1>
+          <p>Where to today?</p>
+        </div>
+        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${me.name}" class="avatar">
+      </div>
+
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:16px;">
+          <h2>Search Trip</h2>
+          <span class="badge ok">LoggedIn</span>
+        </div>
+        
+        <div class="input-group">
+          <label>PNR Number</label> 
+          <input id="pnrInput" type="number" placeholder="Enter 10-digit PNR">
+          <div style="margin-top:8px; text-align:right;">
+             <span style="font-size:12px; color:var(--accent); cursor:pointer; font-weight:600;" onclick="fillDemoData()">✨ Click to try DEMO PNR(Ajm->BLR)</span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="input-group"><label>Boarding</label> <input id="tStart" placeholder="Code"></div>
+          <div class="input-group"><label>Destination</label> <input id="tEnd" placeholder="Code"></div>
+        </div>
+        <input type="hidden" id="tNo"><input type="hidden" id="tRoute">
+        <button class="btn" onclick="createTrip()">Find Companions</button>
+      </div>
+    </div>
+  `;
+}
+
+function fillDemoData(){
+  document.getElementById('pnrInput').value = "2458921045";
+  document.getElementById('tNo').value = "12990";
+  document.getElementById('tStart').value = "AJM";
+  document.getElementById('tEnd').value = "SBC";
+  document.getElementById('tRoute').value = "AJM,BER,ABR,MSH,ADI,BRC,ST,BSR,SBC";
+}
+
+function createTrip(){
+  const tripId = "my_trip_" + Date.now();
+  const db = loadDB();
+  const pnr = document.getElementById('pnrInput').value;
+  let routeStr = document.getElementById('tRoute').value;
+  let tNo = document.getElementById('tNo').value;
+  let tStart = document.getElementById('tStart').value;
+  let tEnd = document.getElementById('tEnd').value;
+
+  if(!routeStr && pnr) { 
+     tNo = "12990"; tStart="AJM"; tEnd="SBC";
+     routeStr = "AJM,BER,ABR,MSH,ADI,BRC,ST,BSR,SBC";
+  }
+
+  let finalRoute = routeStr ? routeStr.split(',') : ["AJM","BER","ABR","MSH","ADI","BRC","ST","BSR","SBC"];
+  
+  db.trips[tripId] = {
+    id: tripId, userId: db.currentUserId,
+    train: tNo, start: tStart, end: tEnd, route: finalRoute
+  };
+  saveDB(db);
+  routeTo('feed', { tripId });
+}
+
+/* --- Screen: Match Feed --- */
+function renderFeed(tripId){
+  const db = loadDB();
+  const myTrip = db.trips[tripId];
+  const { relays } = findRelayMatches(myTrip, db);
+  
+  let contentHtml = '';
+  
+  if(relays.length > 0){
+    contentHtml = relays.map(match => {
+      const user = db.users[match.userId];
+      const existingReq = Object.values(db.requests).find(r => r.to === user.id && r.from === db.currentUserId);
+      const isRequested = !!existingReq;
+      const btnText = isRequested ? "Requested" : "Request";
+      const btnDisabled = isRequested ? "disabled" : "";
+
+      return `
+        <div class="card" style="border:1px solid var(--accent); margin-bottom:12px;">
+          <div class="flex-between">
+            <div style="display:flex; gap:12px; align-items:center;">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}" class="avatar">
+              <div>
+                <div style="font-weight:700; color:var(--text-main);">${user.name}, ${user.age}</div>
+                <div style="font-size:11px; color:var(--text-muted);">${user.interests.join(" • ")}</div>
+              </div>
+            </div>
+            <div class="badge warn">Relay</div>
+          </div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-dot active"></div>
+              <div style="font-weight:600; font-size:14px; color:var(--text-main);">${myTrip.start}</div>
+              <div style="font-size:11px; color:var(--text-muted);">You board here</div>
+              <div class="tl-connector" style="border-left:2px dotted var(--text-muted);"></div>
+            </div>
+            <div class="tl-item" style="margin-top:24px;">
+              <div class="tl-dot ok"></div>
+              <div style="font-weight:600; font-size:14px; color:var(--success);">${match.start}</div>
+              <div style="font-size:11px; color:var(--text-muted);">${user.name} joins here (${match.soloStops} stops away)</div>
+            </div>
+          </div>
+          <button class="btn" id="btn_${user.id}" onclick="sendRequest('${user.id}', '${user.name}')" ${btnDisabled}>${btnText}</button>
+        </div>
+      `;
+    }).join('');
+  } else {
+    contentHtml = `<div class="card" style="text-align:center; padding:40px;"><p>No matches found.</p></div>`;
+  }
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="header">
+      <div class="back-btn" onclick="routeTo('home')">←</div>
+      <div class="header-title">Companions</div>
+      <div style="width:32px;"></div>
+    </div>
+    <div class="fade-in">
+       <p style="padding:0 20px 10px;">Results for <b>${myTrip.train}</b></p>
+       ${contentHtml}
+    </div>
+  `;
+}
+
+function sendRequest(toId, toName){
+  const db = loadDB();
+  const reqId = "req_" + Date.now();
+  const btn = document.getElementById(`btn_${toId}`);
+  if(btn) { btn.innerHTML = "Requested"; btn.disabled = true; }
+  
+  db.requests[reqId] = { id: reqId, from: db.currentUserId, to: toId, status: "pending", timestamp: Date.now() };
+  saveDB(db);
+  
+  setTimeout(() => {
+    const freshDB = loadDB(); 
+    const r = freshDB.requests[reqId];
+    if(!r) return;
+
+    const isAccepted = Math.random() > 0.3; 
+    if(isAccepted) {
+        r.status = "accepted";
+        r.chatId = "chat_" + reqId;
+        freshDB.chats[r.chatId] = { id: r.chatId, members: [freshDB.currentUserId, toId], messages: [] };
+        showToast(`${toName} accepted!`);
+    } else {
+        r.status = "rejected";
+        showToast(`${toName} declined.`, true);
+    }
+    freshDB.hasNotification = true;
+    saveDB(freshDB);
+    updateNotifDot();
+  }, 1500); 
+}
+
+/* --- Screen: Inbox --- */
+function renderInbox(){
+  const freshDB = loadDB(); 
+  const myReqs = Object.values(freshDB.requests).sort((a,b)=>b.timestamp - a.timestamp);
+  
+  const list = myReqs.map(r => {
+    const otherId = r.from === freshDB.currentUserId ? r.to : r.from;
+    const user = freshDB.users[otherId];
+    const isAccepted = r.status === 'accepted';
+    const isRejected = r.status === 'rejected';
+    const isPending = r.status === 'pending';
+    
+    const tapAction = isAccepted ? `<div class="tap-action">Tap to Chat ➜</div>` : ``;
+
+    return `
+      <div class="card" onclick="${isAccepted ? `routeTo('chat', {chatId: '${r.chatId}'})` : ''}" style="opacity:${isRejected?0.6:1}">
+        <div class="flex-between">
+          <div style="display:flex; gap:12px; align-items:center;">
+             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}" class="avatar">
+             <div>
+               <div style="font-weight:600; color:var(--text-main);">${user.name}</div>
+               <div style="font-size:11px; color:var(--text-muted);">
+                 ${isRejected ? 'Declined' : (isPending ? 'Waiting for reply...' : 'Trip Companion')}
+               </div>
+               ${tapAction}
+             </div>
+          </div>
+          <span class="badge ${isAccepted ? 'ok' : (isRejected ? 'err' : 'warn')}">${r.status}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  document.getElementById('main-content').innerHTML = `
+    <div class="fade-in" style="padding-top:20px;">
+      <h1>Inbox</h1>
+      ${list || '<p style="margin-top:20px; text-align:center; opacity:0.6;">Your requests will appear here.</p>'}
+    </div>
+  `;
+}
+
+/* --- Screen: Chat --- */
+function renderChat(chatId){
+  const db = loadDB();
+  const chat = db.chats[chatId];
+  if(!chat) return routeTo('inbox');
+  const otherId = chat.members.find(id => id !== db.currentUserId);
+  const user = db.users[otherId];
+
+  const msgsHtml = chat.messages.map(m => `
+    <div class="msg ${m.from === db.currentUserId ? 'me' : 'them'}">
+      ${m.text}
+    </div>
+  `).join('');
+  
+  document.getElementById('main-content').innerHTML = `
+    <div class="chat-container fade-in">
+      <div class="header" style="border-bottom:1px solid var(--border-color);">
+        <div style="display:flex; align-items:center;">
+           <div class="back-btn" onclick="routeTo('inbox')">←</div>
+           <div style="display:flex; align-items:center; gap:10px;">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}" class="avatar" style="width:32px; height:32px;">
+              <div class="header-title" style="font-size:16px;">${user.name}</div>
+           </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+           <div class="sos-icon" onclick="triggerSOS()">🚨</div>
+           <button class="btn danger sm" onclick="routeTo('rating', {userId: '${user.id}'})">End Trip</button>
+        </div>
+      </div>
+      
+      <div class="chat-messages" id="chatBox">
+        ${msgsHtml.length ? msgsHtml : '<p style="text-align:center; opacity:0.5; margin-top:20px;">Start the conversation!</p>'}
+      </div>
+      
+      <div class="chat-suggestions">
+        <div class="chip" onclick="sendMsg('${chatId}', '👋 Greetings')">👋 Greetings</div>
+        <div class="chip" onclick="sendMsg('${chatId}', '💺 Seat info?')">💺 Seat info?</div>
+        <div class="chip" onclick="sendMsg('${chatId}', '🚆 Status Update')">🚆 Status Update</div>
+      </div>
+
+      <div class="chat-input-area">
+        <input id="msgInput" placeholder="Type a message...">
+        <button class="btn" style="width:auto;" onclick="sendManual('${chatId}')">Send</button>
+      </div>
+    </div>
+  `;
+  const box = document.getElementById('chatBox');
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendManual(chatId){
+  const txt = document.getElementById('msgInput').value;
+  if(txt) sendMsg(chatId, txt);
+}
+
+function sendMsg(chatId, text){
+  const db = loadDB();
+  db.chats[chatId].messages.push({ from: db.currentUserId, text, time: Date.now() });
+  saveDB(db);
+  renderChat(chatId);
+  setTimeout(() => {
+    const freshDB = loadDB();
+    const otherId = freshDB.chats[chatId].members.find(id => id !== freshDB.currentUserId);
+    const user = freshDB.users[otherId];
+    
+    let reply = "Looking forward to it!";
+    if (text.includes('Greetings')) reply = "Hello! Nice to meet you.";
+    if (text.includes('Seat')) reply = "I'm in coach B3.";
+    if (text.includes('Status')) reply = "I'm on my way.";
+
+    freshDB.chats[chatId].messages.push({ from: otherId, text: reply, time: Date.now() });
+    saveDB(freshDB);
+    renderChat(chatId);
+  }, 1000);
+}
+
+/* --- Screen: Rating --- */
+function renderRating(userId){
+  ratingScores = { q1: 0, q2: 0, q3: 0, q4: 0 }; 
+  document.getElementById('main-content').innerHTML = `
+    <div class="fade-in" style="padding:20px;">
+      <h1>Trip Completed</h1>
+      <p style="margin-bottom:20px;">Please rate your experience to continue.</p>
+      
+      <div class="card">
+        ${renderStarRow('q1', 'Behavior')}
+        ${renderStarRow('q2', 'Punctuality')}
+        ${renderStarRow('q3', 'Communication')}
+        ${renderStarRow('q4', 'Safety')}
+        <button id="submitRatingBtn" class="btn" disabled onclick="submitRating('${userId}')">Submit Rating</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderStarRow(key, label){
+  return `
+    <div class="rating-row">
+      <div class="rating-label">${label}</div>
+      <div class="star-input" id="stars_${key}">
+        ${[1,2,3,4,5].map(i => `<span class="star-btn" onclick="setRating('${key}', ${i})">★</span>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function setRating(key, val){
+  ratingScores[key] = val;
+  const parent = document.getElementById(`stars_${key}`);
+  Array.from(parent.children).forEach((el, idx) => {
+    if(idx < val) el.classList.add('active');
+    else el.classList.remove('active');
+  });
+  const allSet = Object.values(ratingScores).every(v => v > 0);
+  document.getElementById('submitRatingBtn').disabled = !allSet;
+}
+
+function submitRating(userId){
+  const avg = Object.values(ratingScores).reduce((a,b)=>a+b,0) / 4;
+  alert(`Thank you! You rated them ${avg.toFixed(1)} Stars.`);
+  routeTo('home');
+}
+
+/* --- Screen: Settings --- */
+function renderProfile(){
+  const db = loadDB();
+  const me = db.users[db.currentUserId];
+  const isLight = db.settings.theme === 'light';
+  document.getElementById('main-content').innerHTML = `
+    <div class="fade-in" style="padding-top:20px;">
+      <h1>Settings</h1>
+      <div class="card" style="text-align:center; margin-top:20px;">
+         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${me.name}" class="avatar" style="width:80px; height:80px; margin-bottom:10px;">
+         <h2 style="color:var(--text-main);">${me.name}</h2>
+         <div class="flex-between" style="justify-content:center; gap:10px;">
+           <span class="badge ok">Verified ID</span>
+           <span class="badge warn">⭐ ${me.rating || 4.5}</span>
+         </div>
+      </div>
+      <h3 style="color:var(--text-main);">Preferences</h3>
+      <div class="card" style="padding:10px 20px;">
+        <div class="setting-item">
+           <span>Light Mode</span>
+           <div class="toggle ${isLight ? 'on' : ''}" onclick="toggleTheme(this)"></div>
+        </div>
+        <div class="setting-item">
+           <span>Notifications</span>
+           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+      <button class="btn secondary" style="color:var(--danger);" onclick="localStorage.removeItem(DB_KEY); location.reload();">Reset App Data</button>
+    </div>
+  `;
+}
+
+function toggleTheme(el){
+  el.classList.toggle('on');
+  const newTheme = el.classList.contains('on') ? 'light' : 'dark';
+  applyTheme(newTheme);
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>
